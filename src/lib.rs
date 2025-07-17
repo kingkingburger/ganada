@@ -1,3 +1,5 @@
+use std::char;
+
 // wasm_bindgen은 Rust와 JavaScript 사이의 다리 역할을 해요.
 use wasm_bindgen::prelude::*;
 
@@ -16,6 +18,20 @@ const JONGSEONG_START: u32 = 0x11A7; // 종성 (빈 값) - 실제로는 0x11A8�
 const JUNGSEONG_COUNT: u32 = 21;
 const JONGSEONG_COUNT: u32 = 28;
 
+// ---------- 호환 자모 테이블 ----------
+// 초성 19 개 (Compatibility Jamo 영역, 글꼴 지원 ↑)
+const CHOSEONG_COMPAT: [char; 19] = [
+    'ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ',
+    'ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ',
+];
+
+// 종성 0~27 (0 → 빈값)
+const JONGSEONG_COMPAT: [char; 28] = [
+    '\0','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ',
+    'ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ',
+    'ㅋ','ㅌ','ㅍ','ㅎ',
+];
+
 /// 문자열에 한글이 포함되어 있는지 확인합니다.
 #[wasm_bindgen]
 pub fn is_korean(text: &str) -> bool {
@@ -29,31 +45,55 @@ pub fn is_korean(text: &str) -> bool {
 /// 한글 문자열을 자모 단위로 분해합니다. (예: "한글" -> ["ㅎ", "ㅏ", "ㄴ", "ㄱ", "ㅡ", "ㄹ"])
 #[wasm_bindgen]
 pub fn decompose(text: &str) -> Vec<String> {
-    let mut result = Vec::new();
-    for c in text.chars() {
-        let code = c as u32;
+    let mut out = Vec::with_capacity(text.len() * 3); // 대략적 예약
+    
+    for ch in text.chars() {
+        let cp = ch as u32;
+        if (HANGUL_START..=HANGUL_END).contains(&cp) {
+            // 1) 음절 → 상대 위치
+            let rel: u32 = cp - HANGUL_START;
+            let l: usize  =  (rel / (JUNGSEONG_COUNT * JONGSEONG_COUNT)) as usize;
+            let v: usize  = ((rel % (JUNGSEONG_COUNT * JONGSEONG_COUNT)) / JONGSEONG_COUNT) as usize;
+            let t: usize  =  (rel % JONGSEONG_COUNT) as usize;
 
-        // 문자가 한글 음절 범위에 있을 경우에만 분해해요.
-        if code >= HANGUL_START && code <= HANGUL_END {
-            let relative_code = code - HANGUL_START;
+            // 2) 초성
+            out.push(CHOSEONG_COMPAT[l].to_string());
 
-            let choseong_index = relative_code / (JUNGSEONG_COUNT * JONGSEONG_COUNT);
-            let jungseong_index = (relative_code % (JUNGSEONG_COUNT * JONGSEONG_COUNT)) / JONGSEONG_COUNT;
-            let jongseong_index = relative_code % JONGSEONG_COUNT;
+            // 3) 중성 (복합 모음 분리)
+            let vowel_char: char = char::from_u32(0x314F + v as u32).unwrap();
+            if let Some([a, b]) = split_vowel(vowel_char) {
+                out.push(a.to_string());
+                out.push(b.to_string());
+            } else {
+                out.push(vowel_char.to_string());
+            }
 
-            // 계산된 인덱스를 실제 유니코드 값으로 변환해요.
-            result.push(std::char::from_u32(CHOSEONG_START + choseong_index).unwrap().to_string());
-            result.push(std::char::from_u32(JUNGSEONG_START + jungseong_index).unwrap().to_string());
-            if jongseong_index > 0 { // 종성이 있는 경우에만 추가
-                result.push(std::char::from_u32(JONGSEONG_START + jongseong_index).unwrap().to_string());
+            // 4) 종성
+            if t != 0 {
+                out.push(JONGSEONG_COMPAT[t].to_string());
             }
         } else {
-            // 한글이 아니면 원래 문자를 그대로 추가해요.
-            result.push(c.to_string());
+            // 한글이 아니면 그대로
+            out.push(ch.to_string());
         }
     }
-    result
+    out
 }
+
+// 복합 모음은 두 글자로 분리해요.
+fn split_vowel(v: char) -> Option<[char; 2]> {
+    Some(match v {
+        'ㅘ' => ['ㅗ','ㅏ'],
+        'ㅙ' => ['ㅗ','ㅐ'],
+        'ㅚ' => ['ㅗ','ㅣ'],
+        'ㅝ' => ['ㅜ','ㅓ'],
+        'ㅞ' => ['ㅜ','ㅔ'],
+        'ㅟ' => ['ㅜ','ㅣ'],
+        'ㅢ' => ['ㅡ','ㅣ'],
+        _     => return None,
+    })
+}
+
 
 // TODO: 자모를 다시 한글로 조합하는 `compose` 함수를 추가할 수 있어요.
 // 이 부분은 논리적으로 조금 더 복잡해서 다음 단계로 도전해보세요!
