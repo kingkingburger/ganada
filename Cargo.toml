@@ -1,8 +1,8 @@
 [package]
-name = "ganada"
-version = "0.1.0"
-authors = ["wmh <wmh@uvc.co.kr>"]
-edition = "2018"
+name = "ganadala"
+version = "0.1.1"
+authors = ["wonminho <dnjsalsgh123@gmail.com>"]
+edition = "2024"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
