@@ -1,5 +1,5 @@
 
-# 🇺🇸 `ganada`
+# 🇺🇸 `ganada` [🇰🇷 `ganada`](https://github.com/kingkingburger/ganada/blob/master/docs/README-kr.md)
 
 `ganada` is a lightweight Rust library for converting between Hangul characters and their individual Jamo components (initial, medial, and final consonants/vowels), designed for efficient use in web environments via WebAssembly (Wasm).
 
