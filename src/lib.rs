@@ -8,13 +8,7 @@ use wasm_bindgen::prelude::*;
 const HANGUL_START: u32 = 0xAC00;
 const HANGUL_END: u32 = 0xD7A3;
 
-// 한글 자모 유니코드 시작점
-const CHOSEONG_START: u32 = 0x1100; // 초성 'ㄱ'
-const JUNGSEONG_START: u32 = 0x1161; // 중성 'ㅏ'
-const JONGSEONG_START: u32 = 0x11A7; // 종성 (빈 값) - 실제로는 0x11A8부터 시작
-
 // 자모 개수
-// const CHOSEONG_COUNT: u32 = 19;
 const JUNGSEONG_COUNT: u32 = 21;
 const JONGSEONG_COUNT: u32 = 28;
 
@@ -35,9 +29,8 @@ const JONGSEONG_COMPAT: [char; 28] = [
 /// 문자열에 한글이 포함되어 있는지 확인합니다.
 #[wasm_bindgen]
 pub fn is_korean(text: &str) -> bool {
-    // text.chars()로 문자열을 순회하며 각 문자가 한글 범위에 있는지 확인해요.
     text.chars().any(|c| {
-        let code = c as u32;
+        let code: u32 = c as u32;
         code >= HANGUL_START && code <= HANGUL_END
     })
 }
@@ -45,10 +38,10 @@ pub fn is_korean(text: &str) -> bool {
 /// 한글 문자열을 자모 단위로 분해합니다. (예: "한글" -> ["ㅎ", "ㅏ", "ㄴ", "ㄱ", "ㅡ", "ㄹ"])
 #[wasm_bindgen]
 pub fn decompose(text: &str) -> Vec<String> {
-    let mut out = Vec::with_capacity(text.len() * 3); // 대략적 예약
+    let mut result: Vec<String> = Vec::<String>::with_capacity(text.len() * 3); // 대략적 예약
     
-    for ch in text.chars() {
-        let cp = ch as u32;
+    for word in text.chars() {
+        let cp: u32 = word as u32;
         if (HANGUL_START..=HANGUL_END).contains(&cp) {
             // 1) 음절 → 상대 위치
             let rel: u32 = cp - HANGUL_START;
@@ -57,27 +50,27 @@ pub fn decompose(text: &str) -> Vec<String> {
             let t: usize  =  (rel % JONGSEONG_COUNT) as usize;
 
             // 2) 초성
-            out.push(CHOSEONG_COMPAT[l].to_string());
+            result.push(CHOSEONG_COMPAT[l].to_string());
 
             // 3) 중성 (복합 모음 분리)
             let vowel_char: char = char::from_u32(0x314F + v as u32).unwrap();
             if let Some([a, b]) = split_vowel(vowel_char) {
-                out.push(a.to_string());
-                out.push(b.to_string());
+                result.push(a.to_string());
+                result.push(b.to_string());
             } else {
-                out.push(vowel_char.to_string());
+                result.push(vowel_char.to_string());
             }
 
             // 4) 종성
             if t != 0 {
-                out.push(JONGSEONG_COMPAT[t].to_string());
+                result.push(JONGSEONG_COMPAT[t].to_string());
             }
         } else {
             // 한글이 아니면 그대로
-            out.push(ch.to_string());
+            result.push(word.to_string());
         }
     }
-    out
+    result
 }
 
 // 복합 모음은 두 글자로 분리해요.
@@ -95,11 +88,7 @@ fn split_vowel(v: char) -> Option<[char; 2]> {
 }
 
 
-// TODO: 자모를 다시 한글로 조합하는 `compose` 함수를 추가할 수 있어요.
-// 이 부분은 논리적으로 조금 더 복잡해서 다음 단계로 도전해보세요!
-
 // --- 테스트 코드 ---
-// 테스트 코드는 유지보수성에 매우 중요해요.
 #[cfg(test)]
 mod tests {
     use super::*; // 부모 모듈의 함수들을 가져와요.
