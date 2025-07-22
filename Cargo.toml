@@ -1,8 +1,11 @@
 [package]
 name = "ganadala"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["wonminho <dnjsalsgh123@gmail.com>"]
 edition = "2024"
+repository = "https://github.com/kingkingburger/ganadala"
+license = "MIT"
+description = "A lightweight Rust library for converting between Hangul characters and their individual Jamo components (initial, medial, and final consonants/vowels), designed for efficient use in web environments via WebAssembly (Wasm)."
 
 [lib]
 crate-type = ["cdylib", "rlib"]
