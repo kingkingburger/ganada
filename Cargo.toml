@@ -1,6 +1,6 @@
 [package]
 name = "ganadala"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["wonminho <dnjsalsgh123@gmail.com>"]
 edition = "2024"
 repository = "https://github.com/kingkingburger/ganadala"
